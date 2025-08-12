@@ -8,9 +8,10 @@ from datetime import datetime
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1) Configuration
-STREAM_URL   = 'http://100.64.61.3:8080/?action=stream'  # your MJPEG stream URL
+STREAM_URL   = 'clip.mp4'  # your MJPEG stream URL
 MODEL_PATH   = 'sheet_counter/production_run/weights/best.pt'
 CONF_THRESH  = 0.5         # detection confidence threshold
+SAMPLE_CLIP = 'clip.mp4'
 
 # Define your counting zone:
 X_MIN, X_MAX  = 200, 440   # horizontal bounds of the machine exit
