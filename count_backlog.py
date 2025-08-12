@@ -13,6 +13,7 @@ STREAM_URL   = 'http://100.64.61.3:8080/?action=stream'  # your MJPEG stream URL
 MODEL_PATH   = 'sheet_counter/production_run/weights/best.pt'
 CONF_THRESH  = 0.5         # detection confidence threshold
 SAMPLE_CLIP  = 'clip.mp4'
+MODEL_VIEW = True
 
 # Render / performance knobs
 PROCESS_EVERY = 2   # 1 = infer every frame, 2 = every other frame, 3 = every 3rd, ...
