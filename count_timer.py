@@ -72,7 +72,7 @@ while True:
 
     # ─────────────────────────────────────────────────────────────────────
     # 2) Run detection
-    results = model.predict(frame, conf=CONF_THRESH, imgsz=302, verbose=False)[0]
+    results = model.predict(frame, conf=CONF_THRESH, imgsz=288, verbose=False)[0]
 
     detections = []
     for box in results.boxes.xyxy:
