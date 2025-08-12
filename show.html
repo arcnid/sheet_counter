@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<title>MediaMTX WebRTC Player</title>
+<video
+  id="v"
+  autoplay
+  playsinline
+  controls
+  style="width: 100%; max-width: 960px; background: #000"
+></video>
+<script>
+  (async () => {
+    const path = "live/stream"; // published path
+    const whep = "http://localhost:8889/whep?path=" + encodeURIComponent(path);
+
+    const pc = new RTCPeerConnection();
+    pc.ontrack = (e) => {
+      v.srcObject = e.streams[0];
+    };
+
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    await pc.setLocalDescription(offer);
+
+    const res = await fetch(whep, {
+      method: "POST",
+      headers: { "Content-Type": "application/sdp" },
+      body: offer.sdp,
+    });
+    if (!res.ok) {
+      alert("WHEP POST failed: " + res.status);
+      return;
+    }
+    const answer = await res.text();
+    await pc.setRemoteDescription({ type: "answer", sdp: answer });
+  })();
+</script>
