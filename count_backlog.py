@@ -18,7 +18,7 @@ MODEL_VIEW = True
 # Render / performance knobs
 PROCESS_EVERY = 2   # 1 = infer every frame, 2 = every other frame, 3 = every 3rd, ...
 DRAW_EVERY    = 2   # draw HUD every N frames (reduces GUI cost)
-IMG_SIZE      = 288 # keep your original imgsz; you can try 320/384 later
+IMG_SIZE      = 320 # keep your original imgsz; you can try 320/384 later
 
 # Define your counting zone (unchanged)
 X_MIN, X_MAX  = 200, 440   # horizontal bounds of the machine exit
