@@ -1,0 +1,8 @@
+.git/
+__pycache__/
+*.mp4
+*.mov
+*.avi
+*.zip
+venv/
+node_modules/
