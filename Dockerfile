@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1
-
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -8,16 +7,23 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install base deps first so they cache
-RUN pip install --upgrade pip
+# (Optional but recommended) OS deps that some wheels expect
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install deps; ultralytics may pull opencv-python (GUI) — remove it and ensure headless
-RUN pip install --no-cache-dir ultralytics==8.2.103 supabase==2.6.0 numpy \
- && pip uninstall -y opencv-python || true \
- && pip install --no-cache-dir opencv-python-headless==4.10.0.84
+# Upgrade pip and ensure we always install to THIS interpreter
+RUN python -m pip install --upgrade pip
 
-# Copy your code & weights
+# Install PyTorch CPU wheels explicitly, then Ultralytics
+RUN python -m pip install --no-cache-dir \
+      torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu \
+ && python -m pip install --no-cache-dir ultralytics==8.2.103 supabase==2.6.0 numpy \
+ && python -m pip uninstall -y opencv-python || true \
+ && python -m pip install --no-cache-dir opencv-python-headless==4.10.0.84
+
+# Copy code AFTER deps for better caching
 COPY . /app
 
-# Run your script
+# Start your script (make sure this file exists in repo)
 CMD ["python", "count_container.py"]
