@@ -26,6 +26,9 @@ X_MIN, X_MAX  = 200, 440   # horizontal bounds of the machine exit
 LINE_Y        = 300        # y-coordinate of the counting line
 TRACK_DIST2   = 80**2
 
+# Global cooldown to suppress rapid re-counts (NEW)
+COUNT_COOLDOWN_S = 10.0
+
 # Supabase configuration (UNCHANGED)
 SUPABASE_URL = 'https://pzndsucdxloknrgecijj.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bmRzdWNkeGxva25yZ2VjaWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3NjY0OTcsImV4cCI6MjA1NjM0MjQ5N30.M9ITlEE4KHiScjIgP3lceygmwxLySHiaQBSrOda-b54'
@@ -52,6 +55,9 @@ model = YOLO(MODEL_PATH)
 next_id     = 0
 tracks      = {}   # track_id -> (cx, cy, top_y)
 counted_ids = set()
+
+# Cooldown timer (NEW)
+last_count_ts = 0.0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Latest-frame-only capture thread (prevents backlog / catch-up bursts)
@@ -168,16 +174,29 @@ try:
 
                 # count when top edge crosses the line from above to at/below
                 prev_ty = tracks.get(track_id, (cx, cy, 0))[2]
-                if prev_ty < LINE_Y <= ty and track_id not in counted_ids:
-                    total_count += 1
-                    counted_ids.add(track_id)
-                    print(f"▶️ Counted sheet {track_id} at top_y={ty}, total={total_count}", flush=True)
 
-                    # Persist to Supabase with the true capture timestamp (UNCHANGED)
-                    sb.table("sheet_counts").insert({
-                        "count": total_count,
-                        "recorded_at": datetime.utcnow().isoformat()
-                    }).execute()
+                # ─────────────────────────────────────────────────────────
+                # Cooldown gate (NEW): require LINE_Y crossing AND cooldown
+                crossed = (prev_ty < LINE_Y <= ty)
+                cooldown_over = ((capture_ts - last_count_ts) >= COUNT_COOLDOWN_S)
+                if crossed and track_id not in counted_ids:
+                    if cooldown_over:
+                        total_count += 1
+                        counted_ids.add(track_id)
+                        last_count_ts = capture_ts  # start cooldown
+                        print(f"▶️ Counted sheet {track_id} at top_y={ty}, total={total_count}", flush=True)
+
+                        # Persist to Supabase with the true capture timestamp (UNCHANGED)
+                        sb.table("sheet_counts").insert({
+                            "count": total_count,
+                            "recorded_at": datetime.utcnow().isoformat()
+                        }).execute()
+                    else:
+                        # Optional: debug log to make it obvious we suppressed a hit
+                        remaining = COUNT_COOLDOWN_S - (capture_ts - last_count_ts)
+                        if remaining < 0: remaining = 0
+                        print(f"⏱️ Cooldown active ({remaining:.1f}s left). Suppressed track {track_id} crossing.", flush=True)
+                # ─────────────────────────────────────────────────────────
 
                 new_tracks[track_id] = (cx, cy, ty)
 
